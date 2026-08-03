@@ -1,0 +1,36 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Portal DPO HIMASANTIKA</title>
+    <style>
+        :root { --primary: #0D006E; --bg: #F6F6F7; --card: #FEFEFE; }
+        body { font-family: 'Segoe UI', Tahoma, sans-serif; background: var(--bg); text-align: center; margin: 0; padding: 50px 20px; }
+        .portal-card { background: var(--card); max-width: 400px; margin: 0 auto; padding: 30px; border-radius: 12px; box-shadow: 0 10px 25px rgba(0,0,0,0.1); }
+        .logo { width: 80px; height: 80px; background: var(--primary); color: white; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 30px; font-weight: bold; margin: 0 auto 20px; }
+        h1 { color: var(--primary); font-size: 1.5rem; margin-bottom: 5px; }
+        p { color: #555; margin-bottom: 30px; }
+        .btn { display: block; width: 100%; padding: 15px; margin-bottom: 15px; border-radius: 8px; text-decoration: none; font-weight: bold; transition: 0.2s; box-sizing: border-box; }
+        .btn-primary { background: var(--primary); color: white; border: none; }
+        .btn-primary:hover { opacity: 0.9; }
+        .btn-secondary { background: white; color: var(--primary); border: 2px solid var(--primary); }
+        .btn-secondary:hover { background: #f0f0f0; }
+    </style>
+</head>
+<body>
+
+    <div class="portal-card">
+        <div class="logo">H</div>
+        <h1>Portal Absensi</h1>
+        <p>Departemen Pengembangan Organisasi HIMASANTIKA</p>
+
+        <!-- Link menuju aplikasi scanner -->
+        <a href="scanner.html" class="btn btn-primary">Buka Scanner Absensi</a>
+        
+        <!-- Link menuju Google Sheets (Ganti dengan Link Sheets Anda yang di-set View Only/Edit) -->
+        <a href="https://docs.google.com/spreadsheets/d/1RZKe0ZGAwuJWuhfoOW0qxgMYTmCUFZUPcQO0AKR2kYE/edit?gid=404052711#gid=404052711" target="_blank" class="btn btn-secondary">Unduh / Lihat Rekap Data</a>
+    </div>
+
+</body>
+</html>

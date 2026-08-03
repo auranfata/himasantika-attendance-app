@@ -1,0 +1,42 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Scanner Absensi HIMASANTIKA</title>
+    <link rel="stylesheet" href="style.css">
+    <script src="https://unpkg.com/html5-qrcode"></script>
+</head>
+<body>
+    <div class="header">
+        <h1>SISTEM ABSENSI HIMASANTIKA</h1>
+        <p>Departemen Pengembangan Organisasi</p>
+    </div>
+
+    <p id="status-data" class="loading">Menghubungkan ke Database...</p>
+
+    <div id="reader-container">
+        <div id="reader"></div>
+        <p class="data-info" id="session-info">Memori Sesi: 0 Hadir</p>
+    </div>
+
+    <!-- Manual Input (Hidden by default) -->
+    <div id="manual-container" class="manual-input" style="display: none;">
+        <p>Terlalu banyak kegagalan? Masukkan NIM Manual:</p>
+        <input type="text" id="manual-nim" placeholder="Masukkan NIM...">
+        <button onclick="processManualInput()">Input Manual</button>
+    </div>
+
+    <div id="result-container">
+        <img id="res-foto" src="" alt="Foto Anggota" style="width: 120px; height: 120px; border-radius: 50%; object-fit: cover; margin-bottom: 15px; border: 3px solid var(--primary-blue); display: none;">
+        <h2 id="res-nama">Nama Anggota</h2>
+        <p id="res-nim">NIM</p>
+        <p id="res-divisi">Divisi</p>
+        <p id="res-waktu" style="font-weight: bold; margin-top: 10px;"></p>
+        <p id="res-msg" style="font-style: italic;"></p>
+        
+    </div>
+
+    <script src="script.js"></script>
+</body>
+</html>
