@@ -4,7 +4,7 @@ let failedAttempts = 0;
 const scannedNIMs = new Set(); 
 const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
 
-// 1. FUNGSI AUDIO (3 Indikator Berbeda)
+// 1. FUNGSI AUDIO
 function playSound(type) {
     if(audioCtx.state === 'suspended') audioCtx.resume();
     const osc = audioCtx.createOscillator();
@@ -12,21 +12,18 @@ function playSound(type) {
     osc.connect(gain); gain.connect(audioCtx.destination);
     
     if (type === 'success') {
-        // BERHASIL: Nada tinggi, jernih (Ting!)
         osc.type = 'sine';
         osc.frequency.setValueAtTime(800, audioCtx.currentTime);
         gain.gain.setValueAtTime(1, audioCtx.currentTime);
         gain.gain.exponentialRampToValueAtTime(0.001, audioCtx.currentTime + 0.2);
         osc.start(); osc.stop(audioCtx.currentTime + 0.2);
     } else if (type === 'warning') {
-        // SUDAH ABSEN: Nada sedang, mengalun (Tet!)
         osc.type = 'square';
         osc.frequency.setValueAtTime(400, audioCtx.currentTime);
         gain.gain.setValueAtTime(0.3, audioCtx.currentTime);
         gain.gain.exponentialRampToValueAtTime(0.001, audioCtx.currentTime + 0.4);
         osc.start(); osc.stop(audioCtx.currentTime + 0.4);
     } else {
-        // GAGAL/TIDAK TERDAFTAR: Nada sangat rendah, kasar (Buzzer!)
         osc.type = 'sawtooth';
         osc.frequency.setValueAtTime(150, audioCtx.currentTime);
         gain.gain.setValueAtTime(1, audioCtx.currentTime);
@@ -35,11 +32,16 @@ function playSound(type) {
     }
 }
 
-// 1. UPDATE: Fungsi Fetch On Load
+// 2. FUNGSI FETCH ON LOAD
 async function loadDataMaster() {
     try {
-        // Tembak ke API lokal Vercel
         const response = await fetch('/api/getMaster'); 
+        
+        // Cek jika status bukan 200 OK (misal 404 atau 500)
+        if (!response.ok) {
+            throw new Error(`HTTP error! status: ${response.status}`);
+        }
+        
         dataMaster = await response.json();
         
         if (dataMaster.error) throw new Error(dataMaster.error);
@@ -48,14 +50,15 @@ async function loadDataMaster() {
         document.getElementById('status-data').style.color = "green";
         startScanner();
     } catch (err) {
+        console.error("Detail Error Load Master:", err);
         document.getElementById('status-data').innerText = "Sistem Offline / Gagal memuat data.";
         document.getElementById('status-data').style.color = "red";
     }
 }
 
+// 3. FUNGSI KIRIM LOG (Hanya ada SATU fungsi ini)
 async function kirimKeGoogleSheets(mhs, status) {
     try {
-        // Tembak ke API lokal Vercel
         await fetch('/api/postLog', { 
             method: "POST",
             headers: { "Content-Type": "application/json" },
@@ -66,7 +69,7 @@ async function kirimKeGoogleSheets(mhs, status) {
     }
 }
 
-// 3. START SCANNER
+// 4. START SCANNER
 function startScanner() {
     const html5QrCode = new Html5Qrcode("reader");
     html5QrCode.start({ facingMode: "environment" }, { fps: 10, qrbox: 250 }, onScanSuccess);
@@ -82,7 +85,7 @@ function processManualInput() {
     if (nim.trim() !== "") performAbsensi(nim);
 }
 
-// 4. LOGIKA ABSENSI UTAMA
+// 5. LOGIKA ABSENSI UTAMA
 async function performAbsensi(nim) {
     isProcessing = true;
     const resContainer = document.getElementById('result-container');
@@ -91,9 +94,8 @@ async function performAbsensi(nim) {
 
     resContainer.style.display = "block";
 
-    // Cek Double Scan
     if (scannedNIMs.has(nim)) {
-        playSound('warning'); // Suara beda
+        playSound('warning');
         showResult("warning", "PERINGATAN!", "NIM: " + nim, "-", "Anggota ini SUDAH ABSEN.");
         resetScanner(); return;
     }
@@ -106,13 +108,12 @@ async function performAbsensi(nim) {
         failedAttempts = 0; 
         playSound('success'); 
 
-        // Tampilkan Foto
         const imgFoto = document.getElementById('res-foto');
         if (anggota.Foto) {
             imgFoto.src = anggota.Foto;
             imgFoto.style.display = "inline-block";
         } else {
-            imgFoto.style.display = "none"; // Sembunyikan jika tidak ada foto
+            imgFoto.style.display = "none"; 
         }
 
         showResult("success", anggota.Nama, "NIM: " + anggota.NIM, "Divisi: " + anggota.Divisi, "BERHASIL DICATAT");
@@ -121,7 +122,6 @@ async function performAbsensi(nim) {
         failedAttempts++;
         playSound('error'); 
         
-        // Sembunyikan foto saat error
         document.getElementById('res-foto').style.display = "none"; 
         
         showResult("error", "TIDAK TERDAFTAR", "NIM: " + nim, "-", "Silakan cek data atau input manual.");
@@ -141,25 +141,11 @@ function showResult(cls, nama, nim, div, msg) {
     document.getElementById('res-msg').innerText = msg;
 }
 
-// JEDA WAKTU POP-UP: Diubah menjadi 4.5 Detik
 function resetScanner() {
     setTimeout(() => { 
         isProcessing = false; 
         document.getElementById('result-container').style.display = "none"; 
     }, 4500); 
-}
-
-// MENGIRIM KE DATABASE (Tanpa memblokir UI)
-async function kirimKeGoogleSheets(mhs, status) {
-    try {
-        await fetch(GAS_URL, { 
-            method: "POST", 
-            body: JSON.stringify({nim: mhs.NIM, nama: mhs.Nama, divisi: mhs.Divisi, status: status}) 
-        });
-    } catch (err) {
-        console.error("Gagal mengirim data:", err);
-        // DPO belum tahu kalau ini gagal.
-    }
 }
 
 loadDataMaster();
