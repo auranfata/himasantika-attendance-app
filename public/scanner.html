@@ -3,40 +3,79 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Scanner Absensi HIMASANTIKA</title>
+    <title>Scanner DPO - HIMASANTIKA</title>
     <link rel="stylesheet" href="style.css">
-    <script src="https://unpkg.com/html5-qrcode"></script>
+    <!-- Font Awesome untuk Ikon Tombol -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
 </head>
 <body>
-    <div class="header">
-        <h1>SISTEM ABSENSI HIMASANTIKA</h1>
-        <p>Departemen Pengembangan Organisasi</p>
+
+    <div class="container">
+        <div class="header-section">
+            <h2><i class="fas fa-qrcode"></i> Sistem Absensi DPO</h2>
+            <p id="status-data" class="status-indicator">Sedang memuat data master...</p>
+        </div>
+
+        <!-- PANEL 1: SETUP KEGIATAN (Muncul pertama kali) -->
+        <div id="setup-panel" class="panel active-panel">
+            <h3>Konfigurasi Sesi</h3>
+            <div class="input-group">
+                <label>Pilih Kategori Kegiatan:</label>
+                <select id="kategori-kegiatan" class="form-control">
+                    <option value="" disabled selected>-- Pilih Kegiatan --</option>
+                    <option value="Rapat Pleno">Rapat Pleno</option>
+                    <option value="Open Recruitment">Open Recruitment</option>
+                    <option value="Diklat Ruang">Diklat Ruang</option>
+                    <option value="Evaluasi Tahunan">Evaluasi Tahunan</option>
+                    <option value="Kustom">-- Lainnya (Ketik Manual) --</option>
+                </select>
+            </div>
+            
+            <div class="input-group" id="kustom-container" style="display: none;">
+                <label>Nama Kegiatan Khusus:</label>
+                <input type="text" id="kategori-kustom" class="form-control" placeholder="Contoh: Rapat Divisi Medkom">
+            </div>
+
+            <button id="btn-mulai-sesi" class="btn btn-primary w-100 mt-15" disabled>Mulai Scanner</button>
+        </div>
+
+        <!-- PANEL 2: SCANNER UTAMA (Muncul setelah setup) -->
+        <div id="scanner-panel" class="panel" style="display: none;">
+            <div class="top-controls">
+                <span id="label-kegiatan-aktif" class="badge">Kegiatan Aktif</span>
+                <button id="btn-ganti-kamera" class="btn btn-icon" title="Balik Kamera"><i class="fas fa-sync-alt"></i></button>
+                <button id="btn-mirror" class="btn btn-icon" title="Efek Cermin"><i class="fas fa-arrows-alt-h"></i></button>
+            </div>
+
+            <div id="reader-container">
+                <div id="reader"></div>
+            </div>
+            
+            <div id="session-info" class="session-badge">Memori Sesi: 0 Hadir</div>
+            
+            <div class="manual-trigger mt-15">
+                <a href="#" id="toggle-manual" class="text-link">Gagal scan? Input Manual</a>
+            </div>
+
+            <div id="manual-container" style="display: none;" class="mt-15">
+                <div class="flex-input">
+                    <input type="text" id="manual-nim" class="form-control" placeholder="Masukkan NIM...">
+                    <button onclick="processManualInput()" class="btn btn-secondary">Proses</button>
+                </div>
+            </div>
+        </div>
+
+        <!-- POP-UP HASIL -->
+        <div id="result-container" style="display: none;">
+            <img id="res-foto" src="" alt="Foto Anggota">
+            <h2 id="res-nama">-</h2>
+            <p id="res-nim" class="bold-text">-</p>
+            <p id="res-divisi">-</p>
+            <p id="res-msg" class="italic-text"></p>
+        </div>
     </div>
 
-    <p id="status-data" class="loading">Menghubungkan ke Database...</p>
-
-    <div id="reader-container">
-        <div id="reader"></div>
-        <p class="data-info" id="session-info">Memori Sesi: 0 Hadir</p>
-    </div>
-
-    <!-- Manual Input (Hidden by default) -->
-    <div id="manual-container" class="manual-input" style="display: none;">
-        <p>Terlalu banyak kegagalan? Masukkan NIM Manual:</p>
-        <input type="text" id="manual-nim" placeholder="Masukkan NIM...">
-        <button onclick="processManualInput()">Input Manual</button>
-    </div>
-
-    <div id="result-container">
-        <img id="res-foto" src="" alt="Foto Anggota" style="width: 120px; height: 120px; border-radius: 50%; object-fit: cover; margin-bottom: 15px; border: 3px solid var(--primary-blue); display: none;">
-        <h2 id="res-nama">Nama Anggota</h2>
-        <p id="res-nim">NIM</p>
-        <p id="res-divisi">Divisi</p>
-        <p id="res-waktu" style="font-weight: bold; margin-top: 10px;"></p>
-        <p id="res-msg" style="font-style: italic;"></p>
-        
-    </div>
-
+    <script src="https://unpkg.com/html5-qrcode" type="text/javascript"></script>
     <script src="script.js"></script>
 </body>
 </html>
