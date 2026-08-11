@@ -57,7 +57,8 @@ function setupEventListeners() {
     });
 
     document.getElementById('btn-menu-rekap').addEventListener('click', () => {
-        window.open("https://docs.google.com/spreadsheets/d/1RZKe0ZGAwuJWuhfoOW0qxgMYTmCUFZUPcQO0AKR2kYE/edit?usp=sharing", "_blank");
+        // Tautan diamankan menggunakan API Redirect
+        window.open("/api/redirectRecap", "_blank");
     });
 
     document.getElementById('btn-logout').addEventListener('click', () => {
