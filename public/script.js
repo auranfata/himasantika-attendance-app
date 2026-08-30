@@ -1,11 +1,12 @@
 let dataMaster = [];
 let dataLog = []; 
+let dataKegiatan = []; 
 let isProcessing = false;
 let failedAttempts = 0; 
 let scannedNIMs = new Set(); 
 const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
 
-let sesiKegiatan = "";
+let sesiKegiatan = ""; // Akan berisi UUID dari Supabase
 let currentFacingMode = "environment"; 
 let isMirrored = false;
 let html5QrCode = null;
@@ -16,12 +17,10 @@ document.addEventListener("DOMContentLoaded", () => {
 
 // --- MANAJEMEN LAYER (VIEW SWITCHING) ---
 function switchView(viewId) {
-    // Sembunyikan semua section
     document.querySelectorAll('.view-section').forEach(section => {
         section.classList.remove('active');
         section.classList.add('hidden');
     });
-    // Tampilkan section yang dituju
     const target = document.getElementById(viewId);
     if(target) {
         target.classList.remove('hidden');
@@ -29,6 +28,7 @@ function switchView(viewId) {
     }
 }
 
+// --- SETUP EVENT LISTENERS ---
 function setupEventListeners() {
     // 1. LOGIN SYSTEM
     document.getElementById('btn-login').addEventListener('click', async () => {
@@ -47,7 +47,6 @@ function setupEventListeners() {
         btn.disabled = true;
         errEl.style.display = 'none';
 
-        // Panggil fungsi auth
         await loadDataMaster(user, pass);
     });
 
@@ -57,15 +56,11 @@ function setupEventListeners() {
     });
 
     document.getElementById('btn-menu-rekap').addEventListener('click', () => {
-        // Tautan diamankan menggunakan API Redirect
         window.open("/api/redirectRecap", "_blank");
     });
 
     document.getElementById('btn-logout').addEventListener('click', () => {
-        // Hapus data dari memori dan kembalikan ke layar login
-        dataMaster = [];
-        dataLog = [];
-        scannedNIMs.clear();
+        dataMaster = []; dataLog = []; dataKegiatan = []; scannedNIMs.clear();
         document.getElementById('login-user').value = "";
         document.getElementById('login-pass').value = "";
         switchView('view-login');
@@ -73,27 +68,25 @@ function setupEventListeners() {
 
     // 3. SETUP KEGIATAN
     const selectKategori = document.getElementById('kategori-kegiatan');
-    const inputKustom = document.getElementById('kategori-kustom');
     const btnMulai = document.getElementById('btn-mulai-sesi');
 
-    selectKategori.addEventListener('change', (e) => {
-        document.getElementById('kustom-container').style.display = e.target.value === "Kustom" ? 'block' : 'none';
-        validasiFormSesi();
-    });
-    inputKustom.addEventListener('input', validasiFormSesi);
+    selectKategori.addEventListener('change', validasiFormSesi);
 
     btnMulai.addEventListener('click', () => {
-        sesiKegiatan = selectKategori.value === "Kustom" ? inputKustom.value : selectKategori.value;
+        sesiKegiatan = selectKategori.value; // ID UUID Kegiatan
         
-        // Membangun ulang Set memori berdasarkan data Log Vercel (Sinkronisasi)
+        const kegiatanTerpilih = dataKegiatan.find(k => k.id === sesiKegiatan);
+        const namaTampil = kegiatanTerpilih ? kegiatanTerpilih.nama_kegiatan : "Kegiatan Aktif";
+
+        // Membangun Set memori berdasarkan log dari Supabase
         scannedNIMs.clear();
         dataLog.forEach(log => {
-            if (log.Kegiatan === sesiKegiatan) {
-                scannedNIMs.add(String(log.NIM));
+            if (log.kegiatan_id === sesiKegiatan) {
+                scannedNIMs.add(String(log.nim));
             }
         });
 
-        document.getElementById('label-kegiatan-aktif').innerText = sesiKegiatan;
+        document.getElementById('label-kegiatan-aktif').innerText = namaTampil;
         switchView('view-scanner');
         document.getElementById('session-info').innerText = `Memori Sesi: ${scannedNIMs.size} Hadir`;
         
@@ -120,7 +113,7 @@ function setupEventListeners() {
     });
 }
 
-// FUNGSI AUTH & FETCH DATA
+// --- FUNGSI AUTH & FETCH DARI SUPABASE ---
 async function loadDataMaster(username, password) {
     try {
         const credentials = btoa(`${username}:${password}`);
@@ -130,15 +123,25 @@ async function loadDataMaster(username, password) {
         }); 
         
         const result = await response.json();
-
         if (!response.ok) throw new Error(result.error || "Gagal Login");
 
-        dataMaster = result.master;
+        // Tangkap 3 tabel dari API Supabase kita
+        dataMaster = result.master || [];
         dataLog = result.log || []; 
+        dataKegiatan = result.kegiatan || [];
 
-        // Beralih ke Dashboard jika login berhasil
-        switchView('view-dashboard');
+        // Injeksi data kegiatan ke Dropdown HTML secara dinamis
+        const selectEl = document.getElementById('kategori-kegiatan');
+        selectEl.innerHTML = '<option value="" disabled selected>-- Pilih Kegiatan Aktif --</option>';
         
+        dataKegiatan.forEach(kegiatan => {
+            const option = document.createElement('option');
+            option.value = kegiatan.id;
+            option.textContent = `${kegiatan.nama_kegiatan}`;
+            selectEl.appendChild(option);
+        });
+
+        switchView('view-dashboard');
     } catch (err) {
         console.error("Auth Error:", err);
         const errEl = document.getElementById('login-error');
@@ -153,46 +156,35 @@ async function loadDataMaster(username, password) {
 
 function validasiFormSesi() {
     const val = document.getElementById('kategori-kegiatan').value;
-    const kustom = document.getElementById('kategori-kustom').value.trim();
     const btnMulai = document.getElementById('btn-mulai-sesi');
-    if (dataMaster.length === 0) return;
-    if (val && val !== "Kustom") btnMulai.disabled = false;
-    else if (val === "Kustom" && kustom.length > 2) btnMulai.disabled = false;
-    else btnMulai.disabled = true;
+    btnMulai.disabled = (!val || val === "");
 }
 
-// FUNGSI AUDIO
+// --- FUNGSI AUDIO ---
 function playSound(type) {
     if(audioCtx.state === 'suspended') audioCtx.resume();
-    const osc = audioCtx.createOscillator();
-    const gain = audioCtx.createGain();
+    const osc = audioCtx.createOscillator(); const gain = audioCtx.createGain();
     osc.connect(gain); gain.connect(audioCtx.destination);
     if (type === 'success') { osc.type = 'sine'; osc.frequency.setValueAtTime(800, audioCtx.currentTime); gain.gain.setValueAtTime(1, audioCtx.currentTime); gain.gain.exponentialRampToValueAtTime(0.001, audioCtx.currentTime + 0.2); osc.start(); osc.stop(audioCtx.currentTime + 0.2); } 
     else if (type === 'warning') { osc.type = 'square'; osc.frequency.setValueAtTime(400, audioCtx.currentTime); gain.gain.setValueAtTime(0.3, audioCtx.currentTime); gain.gain.exponentialRampToValueAtTime(0.001, audioCtx.currentTime + 0.4); osc.start(); osc.stop(audioCtx.currentTime + 0.4); } 
     else { osc.type = 'sawtooth'; osc.frequency.setValueAtTime(150, audioCtx.currentTime); gain.gain.setValueAtTime(1, audioCtx.currentTime); gain.gain.exponentialRampToValueAtTime(0.001, audioCtx.currentTime + 0.6); osc.start(); osc.stop(audioCtx.currentTime + 0.6); }
 }
 
-// KONTROL KAMERA
+// --- KONTROL KAMERA ---
 function startScanner() { if(html5QrCode) { html5QrCode.stop().then(() => initCamera()).catch(err => initCamera()); } else { initCamera(); } }
 function initCamera() { html5QrCode = new Html5Qrcode("reader"); html5QrCode.start({ facingMode: currentFacingMode }, { fps: 10, qrbox: { width: 250, height: 250 } }, onScanSuccess).catch(err => { alert("Gagal mengakses kamera."); }); }
 function restartScanner() { if (html5QrCode && html5QrCode.isScanning) { html5QrCode.stop().then(() => { initCamera(); }); } }
 
 function stopScannerAndBack() {
     if (html5QrCode && html5QrCode.isScanning) {
-        html5QrCode.stop().then(() => {
-            switchView('view-dashboard');
-        }).catch(err => {
-            console.error("Gagal stop kamera:", err);
-            switchView('view-dashboard');
-        });
-    } else {
-        switchView('view-dashboard');
-    }
+        html5QrCode.stop().then(() => switchView('view-dashboard')).catch(err => switchView('view-dashboard'));
+    } else { switchView('view-dashboard'); }
 }
 
 async function onScanSuccess(decodedText) { if (isProcessing) return; performAbsensi(decodedText); }
 function processManualInput() { const nim = document.getElementById('manual-nim').value; if (nim.trim() !== "") performAbsensi(nim); }
 
+// --- LOGIKA ABSENSI ---
 async function performAbsensi(nim) {
     isProcessing = true;
     const resContainer = document.getElementById('result-container');
@@ -204,7 +196,7 @@ async function performAbsensi(nim) {
         resetScanner(); return;
     }
 
-    const anggota = dataMaster.find(item => item.NIM == String(nim));
+    const anggota = dataMaster.find(item => item.nim == String(nim));
 
     if (anggota) {
         scannedNIMs.add(String(nim));
@@ -213,11 +205,13 @@ async function performAbsensi(nim) {
         playSound('success'); 
         
         const imgFoto = document.getElementById('res-foto');
-        if (anggota.Foto) { imgFoto.src = anggota.Foto; imgFoto.style.display = "inline-block"; } 
+        if (anggota.foto_url) { imgFoto.src = anggota.foto_url; imgFoto.style.display = "inline-block"; } 
         else { imgFoto.style.display = "none"; }
 
-        showResult("success", anggota.Nama, "NIM: " + anggota.NIM, "Divisi: " + anggota.Divisi, "BERHASIL");
-        kirimKeGoogleSheets(anggota, "Hadir");
+        showResult("success", anggota.nama, "NIM: " + anggota.nim, "Divisi: " + anggota.divisi, "BERHASIL");
+        
+        // Panggil fungsi kirim data dengan struktur Supabase
+        kirimKeDatabase(anggota, "HADIR");
     } else {
         failedAttempts++;
         playSound('error'); 
@@ -239,11 +233,17 @@ function showResult(cls, nama, nim, div, msg) {
 
 function resetScanner() { setTimeout(() => { isProcessing = false; document.getElementById('result-container').style.display = "none"; }, 4500); }
 
-async function kirimKeGoogleSheets(mhs, status) {
+// --- PENGIRIMAN DATA KE BACKEND VERCEL ---
+async function kirimKeDatabase(mhs, status) {
     try {
         await fetch('/api/postLog', { 
-            method: "POST", headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({ nim: mhs.NIM, nama: mhs.Nama, divisi: mhs.Divisi, status: status, kegiatan: sesiKegiatan }) 
+            method: "POST", 
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ 
+                nim: mhs.nim, 
+                status: status, 
+                kegiatan_id: sesiKegiatan 
+            }) 
         });
     } catch (err) { console.error("Gagal mengirim log:", err); }
 }
