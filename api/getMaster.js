@@ -1,18 +1,11 @@
 export default async function handler(req, res) {
-    if (req.method !== 'GET') {
-        return res.status(405).json({ error: 'Method Not Allowed' });
-    }
+    if (req.method !== 'GET') return res.status(405).json({ error: 'Method Not Allowed' });
 
-    // Mencegat Header Autentikasi dari Frontend
+    // 1. Validasi Autentikasi (Sama seperti sebelumnya)
     const authHeader = req.headers.authorization;
-    if (!authHeader) {
-        return res.status(401).json({ error: 'Akses ditolak. Silakan login.' });
-    }
-
-    // Dekode kredensial (Format Basic Auth)
+    if (!authHeader) return res.status(401).json({ error: 'Akses ditolak.' });
     const base64Credentials = authHeader.split(' ')[1];
-    const credentials = Buffer.from(base64Credentials, 'base64').toString('ascii');
-    const [username, password] = credentials.split(':');
+    const [username, password] = Buffer.from(base64Credentials, 'base64').toString('ascii').split(':');
 
     const validAccounts = {
         "HarisDPO2026": "dpo2026A",
@@ -21,27 +14,37 @@ export default async function handler(req, res) {
         "FarizDPO2026": "dpo2026D",
         "DillaDPO2026": "dpo2026E"
     };
+    if (validAccounts[username] !== password) return res.status(401).json({ error: 'Kredensial salah!' });
 
-    // Validasi Akun
-    if (validAccounts[username] !== password) {
-        return res.status(401).json({ error: 'Username atau Password salah!' });
-    }
+    // 2. Kredensial Supabase dari Vercel Environment
+    const supabaseUrl = process.env.SUPABASE_URL;
+    const supabaseKey = process.env.SUPABASE_ANON_KEY;
+    if (!supabaseUrl || !supabaseKey) return res.status(500).json({ error: 'Kunci Supabase Hilang.' });
 
-    // Jika Login Berhasil, Lanjutkan Menarik Database
+    const headers = {
+        'apikey': supabaseKey,
+        'Authorization': `Bearer ${supabaseKey}`,
+        'Content-Type': 'application/json'
+    };
+
     try {
-        const gasUrl = process.env.GAS_URL; 
-        if (!gasUrl) return res.status(500).json({ error: 'Konfigurasi Server Hilang.' });
+        // Tarik data secara simultan untuk kecepatan maksimal
+        const [resAnggota, resLog, resKegiatan] = await Promise.all([
+            fetch(`${supabaseUrl}/rest/v1/anggota?select=*&is_active=eq.true`, { headers }),
+            fetch(`${supabaseUrl}/rest/v1/absensi?select=*`, { headers }),
+            fetch(`${supabaseUrl}/rest/v1/kegiatan?select=*&status=eq.AKTIF`, { headers })
+        ]);
 
-        const response = await fetch(gasUrl);
-        const textResponse = await response.text();
+        const masterData = await resAnggota.json();
+        const logData = await resLog.json();
+        const kegiatanData = await resKegiatan.json();
 
-        try {
-            const data = JSON.parse(textResponse); 
-            return res.status(200).json(data);
-        } catch (parseError) {
-            return res.status(500).json({ error: 'Format Google salah.' });
-        }
+        return res.status(200).json({ 
+            master: masterData, 
+            log: logData, 
+            kegiatan: kegiatanData 
+        });
     } catch (error) {
-        return res.status(500).json({ error: 'Gagal terhubung ke Database.' });
+        return res.status(500).json({ error: 'Gagal fetch ke Supabase.' });
     }
 }
