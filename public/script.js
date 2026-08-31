@@ -52,7 +52,7 @@ function setupEventListeners() {
 
     // 2. DASHBOARD MENU
     document.getElementById('btn-menu-scanner').addEventListener('click', () => {
-        switchView('view-rekap');
+        switchView('view-setup');
     });
 
     document.getElementById('btn-menu-rekap').addEventListener('click', () => {
