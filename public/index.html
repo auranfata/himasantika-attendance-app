@@ -68,6 +68,14 @@
             </button>
         </div>
 
+        <!-- Setelah btn-logout di view-dashboard -->
+<button id="btn-install-pwa" 
+        onclick="installPWA()" 
+        class="btn btn-outline w-100 mt-10" 
+        style="display: none;">
+    <i class="fas fa-download"></i> Install Aplikasi
+</button>
+
         <!-- ================= LAYER 3: SETUP KEGIATAN ================= -->
         <div id="view-setup" class="view-section hidden">
             <div class="nav-header">
@@ -186,5 +194,38 @@
         });
       }
     </script>
+
+    <!-- ===== PWA Install Handler ===== -->
+<script>
+  let deferredPrompt;
+
+  // Tangkap event dari Chrome sebelum prompt ditampilkan
+  window.addEventListener('beforeinstallprompt', (e) => {
+    e.preventDefault();
+    deferredPrompt = e;
+
+    // Tampilkan tombol install yang sudah kita siapkan
+    const btnInstall = document.getElementById('btn-install-pwa');
+    if (btnInstall) btnInstall.style.display = 'block';
+  });
+
+  // Jalankan install saat tombol diklik
+  function installPWA() {
+    if (!deferredPrompt) return;
+    deferredPrompt.prompt();
+    deferredPrompt.userChoice.then((choiceResult) => {
+      deferredPrompt = null;
+      const btnInstall = document.getElementById('btn-install-pwa');
+      if (btnInstall) btnInstall.style.display = 'none';
+    });
+  }
+
+  // Sembunyikan tombol jika sudah terinstall
+  window.addEventListener('appinstalled', () => {
+    const btnInstall = document.getElementById('btn-install-pwa');
+    if (btnInstall) btnInstall.style.display = 'none';
+    deferredPrompt = null;
+  });
+</script>
 </body>
 </html>
