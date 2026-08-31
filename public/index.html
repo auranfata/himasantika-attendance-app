@@ -9,6 +9,10 @@
     <!-- Library untuk Export Excel dan PDF (Client-side) -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
+    <!-- Manifest untuk PWA -->
+    <link rel="manifest" href="/manifest.json">
+    <meta name="theme-color" content="#0D006E">
+    <link rel="apple-touch-icon" href="/images/hima.png">
 </head>
 <body>
 
@@ -165,5 +169,19 @@
 
     <script src="https://unpkg.com/html5-qrcode" type="text/javascript"></script>
     <script src="script.js"></script>
+
+    <script>
+      if ('serviceWorker' in navigator) {
+        window.addEventListener('load', () => {
+          navigator.serviceWorker.register('/sw.js')
+            .then(registration => {
+              console.log('ServiceWorker terdaftar dengan sukses pada scope: ', registration.scope);
+            })
+            .catch(err => {
+              console.log('Pendaftaran ServiceWorker gagal: ', err);
+            });
+        });
+      }
+    </script>
 </body>
 </html>

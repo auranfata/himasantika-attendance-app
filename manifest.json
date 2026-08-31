@@ -1,0 +1,21 @@
+{
+  "name": "Portal Absensi HIMASANTIKA",
+  "short_name": "Absensi HIMA",
+  "description": "Sistem Absensi QR Code DPO HIMASANTIKA Universitas Muhammadiyah Cirebon",
+  "start_url": "/index.html",
+  "display": "standalone",
+  "background_color": "#F6F6F7",
+  "theme_color": "#0D006E",
+  "icons": [
+    {
+      "src": "/images/hima.png",
+      "sizes": "192x192",
+      "type": "image/png"
+    },
+    {
+      "src": "/images/hima.png",
+      "sizes": "512x512",
+      "type": "image/png"
+    }
+  ]
+}
