@@ -42,6 +42,13 @@
             </div>
             <p id="login-error" class="error-msg" style="display: none;"></p>
             <button id="btn-login" class="btn btn-primary w-100 mt-15">Login Sistem</button>
+
+            <button id="btn-install-pwa" 
+                onclick="installPWA()" 
+                class="btn btn-outline w-100" 
+                style="display: none; margin-top: 12px;">
+                <i class="fas fa-download"></i> Install Aplikasi
+            </button>
         </div>
 
         <!-- ================= LAYER 2: DASHBOARD PORTAL ================= -->
@@ -67,15 +74,6 @@
                 <i class="fas fa-sign-out-alt"></i> Logout
             </button>
         </div>
-
-        <!-- Setelah btn-logout di view-dashboard -->
-<button id="btn-install-pwa" 
-        onclick="installPWA()" 
-        class="btn btn-outline w-100 mt-10" 
-        style="display: none;">
-    <i class="fas fa-download"></i> Install Aplikasi
-</button>
-
         <!-- ================= LAYER 3: SETUP KEGIATAN ================= -->
         <div id="view-setup" class="view-section hidden">
             <div class="nav-header">
