@@ -107,7 +107,64 @@ h2, h3 { color: var(--primary-blue); margin: 0 0 8px 0; }
 .bold-text { font-weight: bold; margin: 5px 0; }
 .italic-text { font-style: italic; margin-top: 10px; font-size: 0.9rem; }
 
-/* Responsiveness adjustments */
+/* 1. Tambahkan atribut transition ke .app-container lama Anda (di bagian atas/tengah style.css) */
+.app-container {
+    background: var(--card-bg);
+    width: 100%;
+    max-width: 480px;
+    border-radius: 16px;
+    box-shadow: 0 8px 30px rgba(0,0,0,0.08);
+    padding: 30px;
+    box-sizing: border-box;
+    position: relative;
+    overflow: hidden;
+    /* Tambahkan baris ini: */
+    transition: max-width 0.4s cubic-bezier(0.25, 0.8, 0.25, 1); 
+}
+
+/* 2. Tambahkan kelas wide-mode */
+.app-container.wide-mode {
+    max-width: 960px; 
+}
+
+/* 3. Letakkan styling tabel di bawahnya */
+.table-responsive {
+    width: 100%;
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch; 
+    border-radius: 8px;
+    box-shadow: 0 4px 15px rgba(0,0,0,0.05);
+    margin-top: 15px;
+    background: white;
+}
+
+#tabel-rekap {
+    width: 100%;
+    min-width: 600px; 
+    border-collapse: collapse;
+}
+
+#tabel-rekap th {
+    background: var(--primary-blue);
+    color: white;
+    padding: 14px 15px;
+    text-align: left;
+    font-weight: 600;
+    white-space: nowrap;
+}
+
+#tabel-rekap td {
+    padding: 12px 15px;
+    text-align: left;
+    border-bottom: 1px solid #f0f2f5;
+    color: var(--text-main);
+}
+
+#tabel-rekap tbody tr:hover {
+    background-color: #f8f9fa;
+}
+
+/* 4. PASTIKAN Media Query BERADA DI BARIS PALING BAWAH FILE style.css */
 @media (max-width: 480px) {
     body { padding: 10px; align-items: flex-start; }
     .app-container { border-radius: 12px; padding: 20px; box-shadow: none; }

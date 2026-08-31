@@ -21,10 +21,19 @@ function switchView(viewId) {
         section.classList.remove('active');
         section.classList.add('hidden');
     });
+    
     const target = document.getElementById(viewId);
     if(target) {
         target.classList.remove('hidden');
         target.classList.add('active');
+    }
+
+    // MANUVER UX: Perlebar kontainer khusus untuk halaman rekap
+    const appContainer = document.querySelector('.app-container');
+    if (viewId === 'view-rekap') {
+        appContainer.classList.add('wide-mode');
+    } else {
+        appContainer.classList.remove('wide-mode');
     }
 }
 
