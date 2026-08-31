@@ -9,9 +9,12 @@
     <!-- Library untuk Export Excel dan PDF (Client-side) -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
-    <!-- Manifest untuk PWA -->
-    <link rel="manifest" href="/manifest.json">
+    <!-- Manifest untuk PWA (Ditambah penanganan CORS Vercel) -->
+    <link rel="manifest" href="/manifest.json" crossorigin="use-credentials">
     <meta name="theme-color" content="#0D006E">
+    
+    <!-- Fix untuk Error 404 Favicon -->
+    <link rel="icon" href="/images/hima.png" type="image/png">
     <link rel="apple-touch-icon" href="/images/hima.png">
 </head>
 <body>
