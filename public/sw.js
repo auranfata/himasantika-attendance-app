@@ -15,7 +15,6 @@ const ALLOWED_CDN_ORIGINS = [
   'https://unpkg.com',
 ];
 
-// ── Install: cache aset lokal saja ───────────────────────────────
 self.addEventListener('install', event => {
   event.waitUntil(
     caches.open(CACHE_NAME).then(cache => {
