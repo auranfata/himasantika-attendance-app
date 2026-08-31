@@ -52,11 +52,12 @@ function setupEventListeners() {
 
     // 2. DASHBOARD MENU
     document.getElementById('btn-menu-scanner').addEventListener('click', () => {
-        switchView('view-setup');
+        switchView('view-rekap');
     });
 
     document.getElementById('btn-menu-rekap').addEventListener('click', () => {
-        window.open("/api/redirectRecap", "_blank");
+       siapkanTabelRekap();
+       switchView('view-rekap');
     });
 
     document.getElementById('btn-logout').addEventListener('click', () => {
@@ -208,10 +209,27 @@ async function performAbsensi(nim) {
         if (anggota.foto_url) { imgFoto.src = anggota.foto_url; imgFoto.style.display = "inline-block"; } 
         else { imgFoto.style.display = "none"; }
 
-        showResult("success", anggota.nama, "NIM: " + anggota.nim, "Divisi: " + anggota.divisi, "BERHASIL");
+        // --- KALKULASI KETERLAMBATAN OTOMATIS ---
+        const kegiatanTerpilih = dataKegiatan.find(k => k.id === sesiKegiatan);
+        let statusKehadiran = "HADIR";
         
-        // Panggil fungsi kirim data dengan struktur Supabase
-        kirimKeDatabase(anggota, "HADIR");
+        if (kegiatanTerpilih && kegiatanTerpilih.waktu_mulai) {
+            const waktuMulai = new Date(kegiatanTerpilih.waktu_mulai);
+            const batasToleransi = kegiatanTerpilih.batas_toleransi || 0; // dalam menit
+            const waktuSekarang = new Date();
+            
+            // Hitung selisih dalam menit
+            const selisihMenit = (waktuSekarang - waktuMulai) / (1000 * 60);
+            
+            if (selisihMenit > batasToleransi) {
+                statusKehadiran = "TERLAMBAT";
+            }
+        }
+
+        showResult("success", anggota.nama, "NIM: " + anggota.nim, "Divisi: " + anggota.divisi, statusKehadiran);
+        
+        // Kirim status yang sudah dikalkulasi ke database
+        kirimKeDatabase(anggota, statusKehadiran);
     } else {
         failedAttempts++;
         playSound('error'); 
@@ -232,6 +250,77 @@ function showResult(cls, nama, nim, div, msg) {
 }
 
 function resetScanner() { setTimeout(() => { isProcessing = false; document.getElementById('result-container').style.display = "none"; }, 4500); }
+
+// --- FITUR TIER 1: REKAPITULASI & EXPORT ---
+function siapkanTabelRekap() {
+    const filterEl = document.getElementById('filter-kegiatan');
+    filterEl.innerHTML = '<option value="ALL">Semua Kegiatan</option>';
+    dataKegiatan.forEach(k => {
+        filterEl.innerHTML += `<option value="${k.id}">${k.nama_kegiatan}</option>`;
+    });
+
+    filterEl.onchange = () => renderTabelRekap(filterEl.value);
+    renderTabelRekap("ALL");
+}
+
+function renderTabelRekap(filterId) {
+    const tbody = document.getElementById('body-rekap');
+    tbody.innerHTML = "";
+
+    // Sortir data log dari yang paling baru (descending)
+    let filteredLog = [...dataLog].sort((a, b) => new Date(b.waktu_scan) - new Date(a.waktu_scan));
+    
+    if (filterId !== "ALL") {
+        filteredLog = filteredLog.filter(log => log.kegiatan_id === filterId);
+    }
+
+    filteredLog.forEach(log => {
+        // Ambil nama dari master anggota (karena di tabel absensi hanya ada NIM)
+        const profil = dataMaster.find(m => m.nim === log.nim);
+        const namaAnggota = profil ? profil.nama : "Tidak Diketahui";
+        
+        // Ambil nama acara
+        const acara = dataKegiatan.find(k => k.id === log.kegiatan_id);
+        const namaAcara = acara ? acara.nama_kegiatan : "Event Dihapus";
+
+        // Format waktu lokal Cirebon (WIB)
+        const formatWaktu = new Date(log.waktu_scan).toLocaleString('id-ID', {
+            day: '2-digit', month: 'short', hour: '2-digit', minute:'2-digit'
+        });
+
+        // Warna status
+        const warnaStatus = log.status_kehadiran === 'TERLAMBAT' ? 'color: red; font-weight: bold;' : 'color: green;';
+
+        tbody.innerHTML += `
+            <tr style="border-bottom: 1px solid #eee; text-align: left;">
+                <td style="padding: 10px;">${formatWaktu}</td>
+                <td style="padding: 10px;">${log.nim}</td>
+                <td style="padding: 10px;">${namaAnggota}</td>
+                <td style="padding: 10px;">${namaAcara}</td>
+                <td style="padding: 10px; ${warnaStatus}">${log.status_kehadiran}</td>
+            </tr>
+        `;
+    });
+}
+
+function exportExcel() {
+    const table = document.getElementById("tabel-rekap");
+    const workbook = XLSX.utils.table_to_book(table, {sheet: "Rekap Kehadiran"});
+    XLSX.writeFile(workbook, `Rekap_HIMASANTIKA_${new Date().getTime()}.xlsx`);
+}
+
+function exportPDF() {
+    const table = document.getElementById("tabel-rekap");
+    const opt = {
+        margin:       1,
+        filename:     `Rekap_HIMASANTIKA_${new Date().getTime()}.pdf`,
+        image:        { type: 'jpeg', quality: 0.98 },
+        html2canvas:  { scale: 2 },
+        jsPDF:        { unit: 'in', format: 'letter', orientation: 'landscape' }
+    };
+    // Menggunakan library html2pdf
+    html2pdf().set(opt).from(table).save();
+}
 
 // --- PENGIRIMAN DATA KE BACKEND VERCEL ---
 async function kirimKeDatabase(mhs, status) {

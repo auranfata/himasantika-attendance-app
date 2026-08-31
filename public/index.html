@@ -6,6 +6,9 @@
     <title>Portal Absensi DPO - HIMASANTIKA</title>
     <link rel="stylesheet" href="style.css">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <!-- Library untuk Export Excel dan PDF (Client-side) -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
 </head>
 <body>
 
@@ -110,6 +113,42 @@
                     <input type="text" id="manual-nim" class="form-control" placeholder="Masukkan NIM...">
                     <button onclick="processManualInput()" class="btn btn-primary">Proses</button>
                 </div>
+            </div>
+        </div>
+
+        <!-- ================= LAYER 5: REKAP & EXPORT ================= -->
+        <div id="view-rekap" class="view-section hidden" style="max-width: 100%;">
+            <div class="nav-header">
+                <button class="btn-back" onclick="switchView('view-dashboard')"><i class="fas fa-arrow-left"></i> Kembali</button>
+                <h3>Rekapitulasi Kehadiran</h3>
+            </div>
+            
+            <div class="top-controls mb-15">
+                <select id="filter-kegiatan" class="form-control" style="width: 60%;">
+                    <option value="ALL">Semua Kegiatan</option>
+                    <!-- Akan diisi dinamis via JS -->
+                </select>
+                <div style="display: flex; gap: 10px;">
+                    <button onclick="exportExcel()" class="btn btn-success" title="Unduh Excel"><i class="fas fa-file-excel"></i></button>
+                    <button onclick="exportPDF()" class="btn btn-danger" title="Unduh PDF"><i class="fas fa-file-pdf"></i></button>
+                </div>
+            </div>
+
+            <div style="overflow-x: auto; border-radius: 8px; border: 1px solid #ddd;">
+                <table id="tabel-rekap" style="width: 100%; border-collapse: collapse; font-size: 0.85rem;">
+                    <thead style="background: var(--primary-blue); color: white;">
+                        <tr>
+                            <th style="padding: 10px;">Waktu Scan</th>
+                            <th style="padding: 10px;">NIM</th>
+                            <th style="padding: 10px;">Nama</th>
+                            <th style="padding: 10px;">Kegiatan</th>
+                            <th style="padding: 10px;">Status</th>
+                        </tr>
+                    </thead>
+                    <tbody id="body-rekap">
+                        <!-- Data akan di-render di sini -->
+                    </tbody>
+                </table>
             </div>
         </div>
 
