@@ -11,8 +11,21 @@ let currentFacingMode = "environment";
 let isMirrored = false;
 let html5QrCode = null;
 let chartKehadiran = null;
-document.addEventListener("DOMContentLoaded", () => {
+document.addEventListener("DOMContentLoaded", async () => {
     setupEventListeners();
+
+    // Auto-Restore Session jika ter-refresh
+    const savedAuth = sessionStorage.getItem('dpo_auth');
+    if (savedAuth) {
+        try {
+            // Decode dari Base64
+            const decoded = atob(savedAuth);
+            const [user, pass] = decoded.split(':');
+            document.getElementById('login-user').value = user;
+            document.getElementById('login-pass').value = pass;
+            document.getElementById('btn-login').click(); // Auto jalankan klik
+        } catch(e) {}
+    }
 });
 
 // --- MANAJEMEN LAYER (VIEW SWITCHING) ---
@@ -85,6 +98,7 @@ function setupEventListeners() {
         document.getElementById('login-user').value = "";
         document.getElementById('login-pass').value = "";
         switchView('view-login');
+        sessionStorage.removeItem('dpo_auth');
     });
 
 
@@ -141,7 +155,8 @@ async function loadDataMaster(username, password) {
         const credentials = btoa(`${username}:${password}`);
         const response = await fetch('/api/getMaster', {
             method: 'GET',
-            headers: { 'Authorization': `Basic ${credentials}` }
+            headers: { 'Authorization': `Basic ${credentials}` },
+            cache: 'no-store' // <--- PAKSA BROWSER UNTUK MENGAMBIL DATA BARU
         }); 
         
         const result = await response.json();
@@ -162,6 +177,8 @@ async function loadDataMaster(username, password) {
             option.textContent = `${kegiatan.nama_kegiatan}`;
             selectEl.appendChild(option);
         });
+
+        sessionStorage.setItem('dpo_auth', credentials);
 
         switchView('view-dashboard');
     } catch (err) {

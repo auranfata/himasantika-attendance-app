@@ -1,5 +1,8 @@
 // File: api/postKegiatan.js
 export default async function handler(req, res) {
+    // Matikan Caching untuk respons API ini
+    res.setHeader('Cache-Control', 'no-store, max-age=0');
+    
     if (req.method !== 'POST') {
         return res.status(405).json({ error: 'Method Not Allowed' });
     }
@@ -10,8 +13,13 @@ export default async function handler(req, res) {
         const payload = req.body;
 
         if (!supabaseUrl || !supabaseKey) {
-            return res.status(500).json({ error: 'Konfigurasi Supabase hilang dari server.' });
+            return res.status(500).json({ error: 'Konfigurasi Supabase hilang.' });
         }
+
+        // STANDARISASI WAKTU KE ISO STRING (UTC yang mewakili WIB)
+        // input datetime-local berformat "YYYY-MM-DDTHH:mm"
+        const waktuLokal = new Date(payload.waktu_mulai); 
+        const isoString = waktuLokal.toISOString(); // Supabase aman memproses ini
 
         const insertRes = await fetch(`${supabaseUrl}/rest/v1/kegiatan`, {
             method: 'POST',
@@ -19,26 +27,21 @@ export default async function handler(req, res) {
                 'apikey': supabaseKey,
                 'Authorization': `Bearer ${supabaseKey}`,
                 'Content-Type': 'application/json',
-                'Prefer': 'return=representation' // Meminta data yang baru diinput kembali ke Frontend
+                'Prefer': 'return=representation'
             },
             body: JSON.stringify({
                 nama_kegiatan: payload.nama_kegiatan,
-                waktu_mulai: payload.waktu_mulai,
+                waktu_mulai: isoString,
                 batas_toleransi: parseInt(payload.batas_toleransi) || 0,
                 status: 'AKTIF'
             })
         });
 
-        if (!insertRes.ok) {
-            const errDetail = await insertRes.text();
-            throw new Error(`Gagal ke Supabase: ${errDetail}`);
-        }
+        if (!insertRes.ok) throw new Error(await insertRes.text());
         
         const result = await insertRes.json();
         res.status(200).json({ success: true, data: result });
-
     } catch (error) {
-        console.error("POST KEGIATAN ERROR:", error);
-        res.status(500).json({ error: 'Gagal menyimpan kegiatan baru.' });
+        res.status(500).json({ error: error.message });
     }
 }
