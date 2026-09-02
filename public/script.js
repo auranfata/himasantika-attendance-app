@@ -69,6 +69,15 @@ function setupEventListeners() {
        switchView('view-rekap');
     });
 
+    document.getElementById('btn-menu-kegiatan').addEventListener('click', () => {
+        renderDaftarKegiatan(); // Render tabel dulu
+        switchView('view-manage-kegiatan'); // Baru pindah layar
+    });
+
+    document.getElementById('btn-menu-anggota').addEventListener('click', () => {
+        switchView('view-manage-anggota');
+    });
+
     document.getElementById('btn-logout').addEventListener('click', () => {
         dataMaster = []; dataLog = []; dataKegiatan = []; scannedNIMs.clear();
         document.getElementById('login-user').value = "";
