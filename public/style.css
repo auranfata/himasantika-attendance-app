@@ -79,6 +79,26 @@ h2, h3 { color: var(--primary-blue); margin: 0 0 8px 0; }
 .text-danger { color: var(--danger); }
 .w-100 { width: 100%; }
 
+.btn-menu-item {
+    background: transparent;
+    color: var(--primary-blue);
+    border: 2px solid var(--primary-blue);
+    transition: all 0.3s ease;
+}
+
+/* Kondisi Default: Tombol pertama berwarna biru JIKA tidak ada kursor di area menu */
+.hover-group:not(:hover) .active-default {
+    background: var(--primary-blue);
+    color: white;
+}
+
+/* Saat di-hover: Tombol yang ditunjuk kursor akan jadi biru */
+.btn-menu-item:hover {
+    background: var(--primary-blue);
+    color: white;
+    transform: translateY(-2px); /* Tambahan sedikit efek melayang */
+}
+
 /* Navigation */
 .nav-header { display: flex; align-items: center; margin-bottom: 20px; border-bottom: 1px solid #eee; padding-bottom: 15px; }
 .nav-header h3 { margin: 0; flex-grow: 1; text-align: right; }

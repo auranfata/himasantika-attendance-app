@@ -345,3 +345,98 @@ async function kirimKeDatabase(mhs, status) {
         });
     } catch (err) { console.error("Gagal mengirim log:", err); }
 }
+
+// =======================================================
+//  MANAJEMEN KEGIATAN (CRUD)
+// =======================================================
+
+async function tambahKegiatanBaru() {
+    const nama = document.getElementById('crud-nama-acara').value.trim();
+    const waktu = document.getElementById('crud-waktu-mulai').value;
+    const toleransi = document.getElementById('crud-toleransi').value;
+    const msgEl = document.getElementById('msg-kegiatan');
+
+    if (!nama || !waktu || !toleransi) {
+        msgEl.innerText = "Harap isi semua kolom dengan benar!";
+        msgEl.style.color = "red";
+        msgEl.style.display = "block";
+        return;
+    }
+
+    const btn = document.getElementById('btn-tambah-kegiatan');
+    btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Menyimpan...';
+    btn.disabled = true;
+    msgEl.style.display = "none";
+
+    try {
+        const response = await fetch('/api/postKegiatan', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+                nama_kegiatan: nama,
+                waktu_mulai: waktu, 
+                batas_toleransi: toleransi
+            })
+        });
+
+        const result = await response.json();
+        if (!response.ok) throw new Error(result.error || "Gagal menyimpan");
+
+        // Reset Formulir
+        document.getElementById('crud-nama-acara').value = "";
+        document.getElementById('crud-waktu-mulai').value = "";
+        document.getElementById('crud-toleransi').value = "";
+
+        // Push data baru ke RAM agar tidak perlu refresh halaman
+        if (result.data && result.data.length > 0) {
+            dataKegiatan.push(result.data[0]);
+        }
+
+        msgEl.innerText = "Kegiatan berhasil ditambahkan!";
+        msgEl.style.color = "green";
+        msgEl.style.display = "block";
+
+        renderDaftarKegiatan(); // Segarkan tabel di bawah form
+
+    } catch (err) {
+        msgEl.innerText = err.message;
+        msgEl.style.color = "red";
+        msgEl.style.display = "block";
+    } finally {
+        btn.innerHTML = 'Simpan Kegiatan';
+        btn.disabled = false;
+        setTimeout(() => { msgEl.style.display = "none"; }, 3500);
+    }
+}
+
+function renderDaftarKegiatan() {
+    const tbody = document.getElementById('body-list-kegiatan');
+    tbody.innerHTML = "";
+
+    if (dataKegiatan.length === 0) {
+        tbody.innerHTML = `<tr><td colspan="3" style="text-align:center; padding: 10px;">Belum ada kegiatan.</td></tr>`;
+        return;
+    }
+
+    // Tampilkan data paling baru di atas
+    const reversedData = [...dataKegiatan].reverse();
+
+    reversedData.forEach(kegiatan => {
+        const formatWaktu = kegiatan.waktu_mulai 
+            ? new Date(kegiatan.waktu_mulai).toLocaleString('id-ID', {day: '2-digit', month: 'short', hour: '2-digit', minute:'2-digit'}) 
+            : '-';
+
+        tbody.innerHTML += `
+            <tr style="border-bottom: 1px solid #eee;">
+                <td style="padding: 8px;">
+                    <strong>${kegiatan.nama_kegiatan}</strong><br>
+                    <span style="font-size: 0.75rem; color: #666;">${formatWaktu}</span>
+                </td>
+                <td style="padding: 8px; text-align: center;">${kegiatan.batas_toleransi || 0} mnt</td>
+                <td style="padding: 8px; text-align: center;">
+                    <span class="badge" style="background: ${kegiatan.status === 'AKTIF' ? 'var(--success)' : '#999'}">${kegiatan.status}</span>
+                </td>
+            </tr>
+        `;
+    });
+}
