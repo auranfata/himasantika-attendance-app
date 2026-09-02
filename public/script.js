@@ -477,8 +477,34 @@ function renderDaftarKegiatan() {
 
     if (dataKegiatan.length === 0) {
         tbody.innerHTML = `<tr><td colspan="3" style="text-align:center; padding: 10px;">Belum ada kegiatan.</td></tr>`;
-        return;
+        return; // ← return di sini, lalu tutup fungsi di bawah
     }
+
+    const reversedData = [...dataKegiatan].reverse();
+
+    reversedData.forEach(kegiatan => {
+        const formatWaktu = kegiatan.waktu_mulai 
+            ? new Date(kegiatan.waktu_mulai).toLocaleString('id-ID', {day: '2-digit', month: 'short', hour: '2-digit', minute:'2-digit'}) 
+            : '-';
+
+        tbody.innerHTML += `
+            <tr style="border-bottom: 1px solid #eee;">
+                <td style="padding: 8px;">
+                    <strong>${kegiatan.nama_kegiatan}</strong><br>
+                    <span style="font-size: 0.75rem; color: #666;">${formatWaktu}</span>
+                </td>
+                <td style="padding: 8px; text-align: center;">${kegiatan.batas_toleransi || 0} mnt</td>
+                <td style="padding: 8px; text-align: center;">
+                    <span class="badge" style="background: ${kegiatan.status === 'AKTIF' ? 'var(--success)' : '#999'}">${kegiatan.status}</span>
+                </td>
+            </tr>
+        `;
+    });
+} // ← tutup renderDaftarKegiatan di sini
+
+// =======================================================
+//  MANAJEMEN ANGGOTA (CRUD)
+// =======================================================
 
 async function tambahAnggotaBaru() {
     const nim = document.getElementById('crud-nim-anggota').value.trim();
@@ -512,7 +538,6 @@ async function tambahAnggotaBaru() {
         document.getElementById('crud-nama-anggota').value = "";
         document.getElementById('crud-divisi-anggota').value = "";
 
-        // Push data baru ke RAM browser
         if (result.data && result.data.length > 0) {
             dataMaster.push(result.data[0]);
         }
@@ -521,7 +546,7 @@ async function tambahAnggotaBaru() {
         msgEl.style.color = "green";
         msgEl.style.display = "block";
 
-        renderDaftarAnggota(); // Segarkan tabel UI
+        renderDaftarAnggota();
 
     } catch (err) {
         msgEl.innerText = err.message;
@@ -552,29 +577,6 @@ function renderDaftarAnggota() {
                 <td style="padding: 8px;">
                     ${anggota.nama}<br>
                     <span style="font-size: 0.75rem; color: #666;">Divisi: ${anggota.divisi || '-'}</span>
-                </td>
-            </tr>
-        `;
-    });
-}
-
-    // Tampilkan data paling baru di atas
-    const reversedData = [...dataKegiatan].reverse();
-
-    reversedData.forEach(kegiatan => {
-        const formatWaktu = kegiatan.waktu_mulai 
-            ? new Date(kegiatan.waktu_mulai).toLocaleString('id-ID', {day: '2-digit', month: 'short', hour: '2-digit', minute:'2-digit'}) 
-            : '-';
-
-        tbody.innerHTML += `
-            <tr style="border-bottom: 1px solid #eee;">
-                <td style="padding: 8px;">
-                    <strong>${kegiatan.nama_kegiatan}</strong><br>
-                    <span style="font-size: 0.75rem; color: #666;">${formatWaktu}</span>
-                </td>
-                <td style="padding: 8px; text-align: center;">${kegiatan.batas_toleransi || 0} mnt</td>
-                <td style="padding: 8px; text-align: center;">
-                    <span class="badge" style="background: ${kegiatan.status === 'AKTIF' ? 'var(--success)' : '#999'}">${kegiatan.status}</span>
                 </td>
             </tr>
         `;
