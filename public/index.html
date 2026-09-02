@@ -62,12 +62,24 @@
             </div>
             
             <div class="menu-grid">
+                <!-- Fitur Utama -->
                 <button id="btn-menu-scanner" class="btn btn-primary w-100 mb-15">
                     <i class="fas fa-qrcode"></i> Buka Scanner Absensi
                 </button>
-                <button id="btn-menu-rekap" class="btn btn-outline w-100">
-                    <i class="fas fa-file-excel"></i> Unduh / Lihat Rekap Data
+                <button id="btn-menu-rekap" class="btn btn-outline w-100 mb-15">
+                    <i class="fas fa-file-excel"></i> Rekap & Analitik Data
                 </button>
+                
+                <!-- Manajemen Database (Tier 1 & Tier 2.1) -->
+                <div style="border-top: 1px solid #eee; margin: 15px 0; padding-top: 15px;">
+                    <p class="subtitle text-center" style="margin-bottom: 10px; font-weight: bold;">Manajemen Data</p>
+                    <button id="btn-menu-kegiatan" class="btn btn-secondary w-100 mb-10" style="margin-bottom: 10px;">
+                        <i class="fas fa-calendar-alt"></i> Kelola Kegiatan (Atur Toleransi)
+                    </button>
+                    <button id="btn-menu-anggota" class="btn btn-secondary w-100">
+                        <i class="fas fa-users"></i> Kelola Data Anggota
+                    </button>
+                </div>
             </div>
 
             <button id="btn-logout" class="btn btn-text w-100 mt-20 text-danger">
@@ -76,6 +88,7 @@
         </div>
         <!-- ================= LAYER 3: SETUP KEGIATAN ================= -->
         <div id="view-setup" class="view-section hidden">
+             <!-- ... (Isi Layer 3 Tetap Sama) ... -->
             <div class="nav-header">
                 <button class="btn-back" onclick="switchView('view-dashboard')"><i class="fas fa-arrow-left"></i> Kembali</button>
                 <h3>Konfigurasi Sesi</h3>
@@ -85,18 +98,10 @@
                 <label>Pilih Kategori Kegiatan:</label>
                 <select id="kategori-kegiatan" class="form-control">
                     <option value="" disabled selected>-- Pilih Kegiatan --</option>
-                    <option value="Rapat TRIWULAN III">RAPAT TRIWULAN III</option>
-                    <option value="DIESNATALIS 14 HIMASANTIKA">DIESNATALIS 14 HIMASANTIKA</option>
-                    <option value="RAPAT KEGIATAN">RAPAT KEGIATAN</option>
-                    <option value="Kustom">-- Lainnya (Ketik Manual) --</option>
+                    <!-- Akan diisi dinamis via JS dari data Supabase -->
                 </select>
             </div>
             
-            <div class="input-group" id="kustom-container" style="display: none;">
-                <label>Nama Kegiatan Khusus:</label>
-                <input type="text" id="kategori-kustom" class="form-control" placeholder="Contoh: Rapat Divisi Medkom">
-            </div>
-
             <button id="btn-mulai-sesi" class="btn btn-primary w-100 mt-20" disabled>Mulai Scanner</button>
         </div>
 
@@ -129,11 +134,16 @@
             </div>
         </div>
 
-        <!-- ================= LAYER 5: REKAP & EXPORT ================= -->
+       <!-- ================= LAYER 5: REKAP, EXPORT, & ANALITIK (Diperbarui untuk Tier 3.2) ================= -->
         <div id="view-rekap" class="view-section hidden" style="max-width: 100%;">
             <div class="nav-header">
                 <button class="btn-back" onclick="switchView('view-dashboard')"><i class="fas fa-arrow-left"></i> Kembali</button>
-                <h3>Rekapitulasi Kehadiran</h3>
+                <h3>Rekap & Analitik</h3>
+            </div>
+            
+            <!-- Tempat merender Grafik Chart.js -->
+            <div class="chart-container" style="position: relative; height:200px; width:100%; margin-bottom: 20px;">
+                <canvas id="kehadiranChart"></canvas>
             </div>
             
             <div class="top-controls mb-15">
@@ -164,6 +174,64 @@
                 </table>
             </div>
         </div>
+
+        <!-- ================= LAYER 6: MANAJEMEN KEGIATAN (Tier 1 CRUD) ================= -->
+        <div id="view-manage-kegiatan" class="view-section hidden">
+            <div class="nav-header">
+                <button class="btn-back" onclick="switchView('view-dashboard')"><i class="fas fa-arrow-left"></i> Kembali</button>
+                <h3>Kelola Kegiatan</h3>
+            </div>
+
+            <!-- Form Tambah Kegiatan Baru -->
+            <div style="background: #f9f9f9; padding: 15px; border-radius: 8px; margin-bottom: 20px; border: 1px solid #ddd;">
+                <h4 style="margin-top: 0; color: var(--primary-blue);">Buat Kegiatan Baru</h4>
+                <div class="input-group">
+                    <label>Nama Acara</label>
+                    <input type="text" id="crud-nama-acara" class="form-control" placeholder="Contoh: Rapat Pleno">
+                </div>
+                <div class="input-group">
+                    <label>Waktu Mulai (Jadwal Asli)</label>
+                    <input type="datetime-local" id="crud-waktu-mulai" class="form-control">
+                </div>
+                <div class="input-group">
+                    <label>Batas Toleransi (Menit)</label>
+                    <input type="number" id="crud-toleransi" class="form-control" placeholder="Contoh: 15">
+                </div>
+                <button id="btn-tambah-kegiatan" onclick="tambahKegiatanBaru()" class="btn btn-primary w-100">Simpan Kegiatan</button>
+                <p id="msg-kegiatan" style="font-size: 0.85rem; margin-top: 10px; text-align: center; display: none;"></p>
+            </div>
+
+            <!-- Daftar Kegiatan Aktif -->
+            <h4 style="color: var(--primary-blue);">Daftar Kegiatan</h4>
+            <div style="overflow-x: auto;">
+                <table style="width: 100%; border-collapse: collapse; font-size: 0.85rem; border: 1px solid #ddd;">
+                    <thead style="background: #eee;">
+                        <tr>
+                            <th style="padding: 8px; text-align: left;">Nama Acara</th>
+                            <th style="padding: 8px; text-align: center;">Toleransi</th>
+                            <th style="padding: 8px; text-align: center;">Aksi</th>
+                        </tr>
+                    </thead>
+                    <tbody id="body-list-kegiatan">
+                        <!-- Daftar kegiatan akan dirender di sini via JS -->
+                    </tbody>
+                </table>
+            </div>
+        </div>
+        <!-- ================= LAYER 7: MANAJEMEN ANGGOTA (Tier 2.1 CRUD) ================= -->
+        <div id="view-manage-anggota" class="view-section hidden">
+            <div class="nav-header">
+                <button class="btn-back" onclick="switchView('view-dashboard')"><i class="fas fa-arrow-left"></i> Kembali</button>
+                <h3>Kelola Anggota</h3>
+            </div>
+            
+            <p style="font-size: 0.9rem; color: #666; text-align: center;">
+                Fasilitas ini sedang dalam tahap pengembangan (WIP) untuk mengamankan modifikasi data master anggota.
+            </p>
+            
+            <!-- Placeholder UI (Bisa dikembangkan lebih lanjut) -->
+            <button class="btn btn-outline w-100 mt-20" disabled><i class="fas fa-plus"></i> Tambah Anggota Baru</button>
+        </div>  
 
     </div>
 
