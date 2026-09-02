@@ -11,7 +11,6 @@ let currentFacingMode = "environment";
 let isMirrored = false;
 let html5QrCode = null;
 let chartKehadiran = null;
-
 document.addEventListener("DOMContentLoaded", () => {
     setupEventListeners();
 });
