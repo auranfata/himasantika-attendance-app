@@ -10,6 +10,7 @@ let sesiKegiatan = ""; // Akan berisi UUID dari Supabase
 let currentFacingMode = "environment"; 
 let isMirrored = false;
 let html5QrCode = null;
+let chartKehadiran = null;
 
 document.addEventListener("DOMContentLoaded", () => {
     setupEventListeners();
@@ -285,28 +286,32 @@ function renderTabelRekap(filterId) {
     const tbody = document.getElementById('body-rekap');
     tbody.innerHTML = "";
 
-    // Sortir data log dari yang paling baru (descending)
+    // Sortir data log dari yang paling baru
     let filteredLog = [...dataLog].sort((a, b) => new Date(b.waktu_scan) - new Date(a.waktu_scan));
     
     if (filterId !== "ALL") {
         filteredLog = filteredLog.filter(log => log.kegiatan_id === filterId);
     }
 
+    // Variabel untuk menghitung statistik Grafik
+    let totalHadir = 0;
+    let totalTerlambat = 0;
+
     filteredLog.forEach(log => {
-        // Ambil nama dari master anggota (karena di tabel absensi hanya ada NIM)
         const profil = dataMaster.find(m => m.nim === log.nim);
         const namaAnggota = profil ? profil.nama : "Tidak Diketahui";
         
-        // Ambil nama acara
         const acara = dataKegiatan.find(k => k.id === log.kegiatan_id);
         const namaAcara = acara ? acara.nama_kegiatan : "Event Dihapus";
 
-        // Format waktu lokal Cirebon (WIB)
         const formatWaktu = new Date(log.waktu_scan).toLocaleString('id-ID', {
             day: '2-digit', month: 'short', hour: '2-digit', minute:'2-digit'
         });
 
-        // Warna status
+        // Hitung untuk Grafik
+        if (log.status_kehadiran === 'HADIR') totalHadir++;
+        if (log.status_kehadiran === 'TERLAMBAT') totalTerlambat++;
+
         const warnaStatus = log.status_kehadiran === 'TERLAMBAT' ? 'color: red; font-weight: bold;' : 'color: green;';
 
         tbody.innerHTML += `
@@ -318,6 +323,39 @@ function renderTabelRekap(filterId) {
                 <td style="padding: 10px; ${warnaStatus}">${log.status_kehadiran}</td>
             </tr>
         `;
+    });
+
+    // Panggil fungsi render grafik
+    renderGrafik(totalHadir, totalTerlambat);
+}
+
+// Fungsi Khusus Membangun Grafik Chart.js
+function renderGrafik(hadir, telat) {
+    const ctx = document.getElementById('kehadiranChart');
+    if (!ctx) return;
+
+    // Hancurkan grafik lama jika sudah ada (agar tidak tumpang tindih saat ganti filter)
+    if (chartKehadiran) {
+        chartKehadiran.destroy();
+    }
+
+    chartKehadiran = new Chart(ctx, {
+        type: 'doughnut', // Anda bisa ganti menjadi 'bar' atau 'pie'
+        data: {
+            labels: ['Hadir Tepat Waktu', 'Terlambat'],
+            datasets: [{
+                data: [hadir, telat],
+                backgroundColor: ['#2ecc71', '#e74c3c'],
+                borderWidth: 0
+            }]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: {
+                legend: { position: 'right' }
+            }
+        }
     });
 }
 
