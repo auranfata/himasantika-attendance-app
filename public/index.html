@@ -16,6 +16,10 @@
     <!-- Fix untuk Error 404 Favicon -->
     <link rel="icon" href="/images/hima.png" type="image/png">
     <link rel="apple-touch-icon" href="/images/hima.png">
+    
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script src="https://unpkg.com/html5-qrcode" type="text/javascript"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 </head>
 <body>
 
@@ -212,20 +216,48 @@
                 </table>
             </div>
         </div>
-        <!-- ================= LAYER 7: MANAJEMEN ANGGOTA (Tier 2.1 CRUD) ================= -->
+        <!-- ================= LAYER 7: MANAJEMEN ANGGOTA (CRUD) ================= -->
         <div id="view-manage-anggota" class="view-section hidden">
             <div class="nav-header">
                 <button class="btn-back" onclick="switchView('view-dashboard')"><i class="fas fa-arrow-left"></i> Kembali</button>
                 <h3>Kelola Anggota</h3>
             </div>
             
-            <p style="font-size: 0.9rem; color: #666; text-align: center;">
-                Fasilitas ini sedang dalam tahap pengembangan (WIP) untuk mengamankan modifikasi data master anggota.
-            </p>
-            
-            <!-- Placeholder UI (Bisa dikembangkan lebih lanjut) -->
-            <button class="btn btn-outline w-100 mt-20" disabled><i class="fas fa-plus"></i> Tambah Anggota Baru</button>
-        </div>  
+            <!-- Form Tambah Anggota Baru -->
+            <div style="background: #f9f9f9; padding: 15px; border-radius: 8px; margin-bottom: 20px; border: 1px solid #ddd;">
+                <h4 style="margin-top: 0; color: var(--primary-blue);">Tambah Master Anggota</h4>
+                <div class="input-group">
+                    <label>Nomor Induk Mahasiswa (NIM)</label>
+                    <input type="text" id="crud-nim-anggota" class="form-control" placeholder="Contoh: 12345678">
+                </div>
+                <div class="input-group">
+                    <label>Nama Lengkap</label>
+                    <input type="text" id="crud-nama-anggota" class="form-control" placeholder="Masukkan nama anggota">
+                </div>
+                <div class="input-group">
+                    <label>Divisi</label>
+                    <input type="text" id="crud-divisi-anggota" class="form-control" placeholder="Contoh: DPO / Medkom">
+                </div>
+                <button id="btn-tambah-anggota" onclick="tambahAnggotaBaru()" class="btn btn-primary w-100">Simpan Anggota</button>
+                <p id="msg-anggota" style="font-size: 0.85rem; margin-top: 10px; text-align: center; display: none;"></p>
+            </div>
+
+            <!-- Daftar Anggota -->
+            <h4 style="color: var(--primary-blue);">Daftar Master Anggota</h4>
+            <div style="overflow-x: auto;">
+                <table style="width: 100%; border-collapse: collapse; font-size: 0.85rem; border: 1px solid #ddd;">
+                    <thead style="background: #eee;">
+                        <tr>
+                            <th style="padding: 8px; text-align: left;">NIM</th>
+                            <th style="padding: 8px; text-align: left;">Nama & Divisi</th>
+                        </tr>
+                    </thead>
+                    <tbody id="body-list-anggota">
+                        <!-- Daftar anggota akan dirender di sini via JS -->
+                    </tbody>
+                </table>
+            </div>
+        </div>
 
     </div>
 
@@ -287,5 +319,6 @@
     deferredPrompt = null;
   });
 </script>
+<script src="script.js"></script>
 </body>
 </html>

@@ -61,9 +61,10 @@ function setupEventListeners() {
 
     // 2. DASHBOARD MENU
     document.getElementById('btn-menu-scanner').addEventListener('click', () => {
+        refreshDropdownKegiatan(); // Memastikan dropdown menarik data terbaru dari memori
         switchView('view-setup');
     });
-
+    
     document.getElementById('btn-menu-rekap').addEventListener('click', () => {
        siapkanTabelRekap();
        switchView('view-rekap');
@@ -75,6 +76,7 @@ function setupEventListeners() {
     });
 
     document.getElementById('btn-menu-anggota').addEventListener('click', () => {
+        renderDaftarAnggota(); // Render tabel anggota saat dibuka
         switchView('view-manage-anggota');
     });
 
@@ -84,6 +86,7 @@ function setupEventListeners() {
         document.getElementById('login-pass').value = "";
         switchView('view-login');
     });
+
 
     // 3. SETUP KEGIATAN
     const selectKategori = document.getElementById('kategori-kegiatan');
@@ -455,6 +458,19 @@ async function tambahKegiatanBaru() {
     }
 }
 
+function refreshDropdownKegiatan() {
+    const selectEl = document.getElementById('kategori-kegiatan');
+    selectEl.innerHTML = '<option value="" disabled selected>-- Pilih Kegiatan Aktif --</option>';
+    
+    dataKegiatan.forEach(kegiatan => {
+        const option = document.createElement('option');
+        option.value = kegiatan.id;
+        option.textContent = `${kegiatan.nama_kegiatan}`;
+        selectEl.appendChild(option);
+    });
+    validasiFormSesi();
+}
+
 function renderDaftarKegiatan() {
     const tbody = document.getElementById('body-list-kegiatan');
     tbody.innerHTML = "";
@@ -463,6 +479,84 @@ function renderDaftarKegiatan() {
         tbody.innerHTML = `<tr><td colspan="3" style="text-align:center; padding: 10px;">Belum ada kegiatan.</td></tr>`;
         return;
     }
+
+async function tambahAnggotaBaru() {
+    const nim = document.getElementById('crud-nim-anggota').value.trim();
+    const nama = document.getElementById('crud-nama-anggota').value.trim();
+    const divisi = document.getElementById('crud-divisi-anggota').value.trim();
+    const msgEl = document.getElementById('msg-anggota');
+
+    if (!nim || !nama || !divisi) {
+        msgEl.innerText = "Harap isi seluruh kolom form!";
+        msgEl.style.color = "red";
+        msgEl.style.display = "block";
+        return;
+    }
+
+    const btn = document.getElementById('btn-tambah-anggota');
+    btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Menyimpan...';
+    btn.disabled = true;
+    msgEl.style.display = "none";
+
+    try {
+        const response = await fetch('/api/postAnggota', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ nim, nama, divisi })
+        });
+
+        const result = await response.json();
+        if (!response.ok) throw new Error(result.error || "Gagal menyimpan");
+
+        document.getElementById('crud-nim-anggota').value = "";
+        document.getElementById('crud-nama-anggota').value = "";
+        document.getElementById('crud-divisi-anggota').value = "";
+
+        // Push data baru ke RAM browser
+        if (result.data && result.data.length > 0) {
+            dataMaster.push(result.data[0]);
+        }
+
+        msgEl.innerText = "Data Anggota berhasil ditambahkan!";
+        msgEl.style.color = "green";
+        msgEl.style.display = "block";
+
+        renderDaftarAnggota(); // Segarkan tabel UI
+
+    } catch (err) {
+        msgEl.innerText = err.message;
+        msgEl.style.color = "red";
+        msgEl.style.display = "block";
+    } finally {
+        btn.innerHTML = 'Simpan Anggota';
+        btn.disabled = false;
+        setTimeout(() => { msgEl.style.display = "none"; }, 3500);
+    }
+}
+
+function renderDaftarAnggota() {
+    const tbody = document.getElementById('body-list-anggota');
+    tbody.innerHTML = "";
+
+    if (dataMaster.length === 0) {
+        tbody.innerHTML = `<tr><td colspan="2" style="text-align:center; padding: 10px;">Belum ada data anggota terdaftar.</td></tr>`;
+        return;
+    }
+
+    const reversedData = [...dataMaster].reverse();
+
+    reversedData.forEach(anggota => {
+        tbody.innerHTML += `
+            <tr style="border-bottom: 1px solid #eee;">
+                <td style="padding: 8px; font-weight: bold;">${anggota.nim}</td>
+                <td style="padding: 8px;">
+                    ${anggota.nama}<br>
+                    <span style="font-size: 0.75rem; color: #666;">Divisi: ${anggota.divisi || '-'}</span>
+                </td>
+            </tr>
+        `;
+    });
+}
 
     // Tampilkan data paling baru di atas
     const reversedData = [...dataKegiatan].reverse();
