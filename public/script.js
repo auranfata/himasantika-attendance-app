@@ -349,9 +349,9 @@ async function performAbsensi(nim) {
         document.getElementById('session-info').innerText = `Memori Sesi: ${scannedNIMs.size} Hadir`;
         failedAttempts = 0; 
         
-        const imgFoto = document.getElementById('res-foto');
-        if (anggota.foto_url) { imgFoto.src = anggota.foto_url; imgFoto.style.display = "inline-block"; } 
-        else { imgFoto.style.display = "none"; }
+        // const imgFoto = document.getElementById('res-foto');
+        // if (anggota.foto_url) { imgFoto.src = anggota.foto_url; imgFoto.style.display = "inline-block"; } 
+        // else { imgFoto.style.display = "none"; }
 
         // --- KALKULASI KETERLAMBATAN OTOMATIS ---
         const kegiatanTerpilih = dataKegiatan.find(k => k.id === sesiKegiatan);
@@ -379,7 +379,7 @@ async function performAbsensi(nim) {
     } else {
         failedAttempts++;
         playSound('error'); 
-        document.getElementById('res-foto').style.display = "none"; 
+        // document.getElementById('res-foto').style.display = "none"; 
         showResult("error", "TIDAK TERDAFTAR", "NIM: " + nim, "-", "DATA TIDAK DITEMUKAN");
         if (failedAttempts >= 3) document.getElementById('manual-container').style.display = 'block';
     }
