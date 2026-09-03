@@ -11,6 +11,9 @@ let currentFacingMode = "environment";
 let isMirrored = false;
 let html5QrCode = null;
 let chartKehadiran = null;
+let syncInterval = null;
+
+
 document.addEventListener("DOMContentLoaded", async () => {
     setupEventListeners();
 
@@ -94,6 +97,7 @@ function setupEventListeners() {
     });
 
     document.getElementById('btn-logout').addEventListener('click', () => {
+        if (syncInterval) clearInterval(syncInterval); // Matikan mesin sinkronisasi
         dataMaster = []; dataLog = []; dataKegiatan = []; scannedNIMs.clear();
         document.getElementById('login-user').value = "";
         document.getElementById('login-pass').value = "";
@@ -150,47 +154,102 @@ function setupEventListeners() {
 }
 
 // --- FUNGSI AUTH & FETCH DARI SUPABASE ---
-async function loadDataMaster(username, password) {
+// --- FUNGSI AUTH & SINKRONISASI LATAR BELAKANG ---
+async function loadDataMaster(username, password, isSilent = false) {
     try {
+        if (!isSilent) {
+            const btn = document.getElementById('btn-login');
+            if (btn) {
+                btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Memverifikasi...';
+                btn.disabled = true;
+            }
+        }
+
         const credentials = btoa(`${username}:${password}`);
-        const response = await fetch('/api/getMaster', {
+        
+        // =====================================================================
+        // ULTIMATE CACHE BUSTER: Tambahkan ?_t=timestamp
+        // Ini memaksa PWA, Browser, dan Vercel mengunduh data baru 100% mutlak
+        // =====================================================================
+        const urlAPI = `/api/getMaster?_t=${new Date().getTime()}`;
+        
+        const response = await fetch(urlAPI, {
             method: 'GET',
             headers: { 'Authorization': `Basic ${credentials}` },
-            cache: 'no-store' // <--- PAKSA BROWSER UNTUK MENGAMBIL DATA BARU
+            cache: 'no-store'
         }); 
         
         const result = await response.json();
         if (!response.ok) throw new Error(result.error || "Gagal Login");
 
-        // Tangkap 3 tabel dari API Supabase kita
+        // Perbarui RAM secara konstan
         dataMaster = result.master || [];
         dataLog = result.log || []; 
         dataKegiatan = result.kegiatan || [];
 
-        // Injeksi data kegiatan ke Dropdown HTML secara dinamis
-        const selectEl = document.getElementById('kategori-kegiatan');
-        selectEl.innerHTML = '<option value="" disabled selected>-- Pilih Kegiatan Aktif --</option>';
-        
-        dataKegiatan.forEach(kegiatan => {
-            const option = document.createElement('option');
-            option.value = kegiatan.id;
-            option.textContent = `${kegiatan.nama_kegiatan}`;
-            selectEl.appendChild(option);
-        });
+        // UPDATE UI SECARA OTOMATIS JIKA ADA PERUBAHAN
+        // 1. Jika panitia sedang buka tabel Rekap, otomatis refresh tabelnya
+        const viewRekap = document.getElementById('view-rekap');
+        if (viewRekap && viewRekap.classList.contains('active')) {
+            const filterVal = document.getElementById('filter-kegiatan').value;
+            renderTabelRekap(filterVal);
+        }
 
-        sessionStorage.setItem('dpo_auth', credentials);
+        // 2. Jika Scanner sedang jalan, perbarui memori agar HP tidak kecolongan Double Scan
+        if (sesiKegiatan) {
+            scannedNIMs.clear();
+            dataLog.forEach(log => {
+                if (log.kegiatan_id === sesiKegiatan) {
+                    scannedNIMs.add(String(log.nim));
+                }
+            });
+            const sessionInfo = document.getElementById('session-info');
+            if(sessionInfo) sessionInfo.innerText = `Memori Sesi: ${scannedNIMs.size} Hadir`;
+        }
 
-        switchView('view-dashboard');
+        // Proses khusus saat Login pertama kali (bukan sinkronisasi di latar)
+        if (!isSilent) {
+            sessionStorage.setItem('dpo_auth', credentials);
+            refreshDropdownKegiatan();
+            switchView('view-dashboard');
+            startAutoSync(); // HIDUPKAN MESIN SINKRONISASI
+        }
+
     } catch (err) {
-        console.error("Auth Error:", err);
-        const errEl = document.getElementById('login-error');
-        errEl.innerText = err.message;
-        errEl.style.display = 'block';
+        console.error("Auth/Sync Error:", err);
+        if (!isSilent) {
+            const errEl = document.getElementById('login-error');
+            if(errEl) {
+                errEl.innerText = err.message;
+                errEl.style.display = 'block';
+            }
+        }
     } finally {
-        const btn = document.getElementById('btn-login');
-        btn.innerHTML = 'Login Sistem';
-        btn.disabled = false;
+        if (!isSilent) {
+            const btn = document.getElementById('btn-login');
+            if(btn) {
+                btn.innerHTML = 'Login Sistem';
+                btn.disabled = false;
+            }
+        }
     }
+}
+
+// MESIN SINKRONISASI LATAR BELAKANG (Bekerja setiap 10 detik)
+function startAutoSync() {
+    if (syncInterval) clearInterval(syncInterval);
+    
+    syncInterval = setInterval(() => {
+        const savedAuth = sessionStorage.getItem('dpo_auth');
+        if (savedAuth) {
+            try {
+                const decoded = atob(savedAuth);
+                const [user, pass] = decoded.split(':');
+                // Panggil fetch secara diam-diam (isSilent = true)
+                loadDataMaster(user, pass, true); 
+            } catch(e) {}
+        }
+    }, 10000); // 10000 milidetik = 10 Detik
 }
 
 function validasiFormSesi() {
