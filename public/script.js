@@ -202,11 +202,54 @@ function validasiFormSesi() {
 // --- FUNGSI AUDIO ---
 function playSound(type) {
     if(audioCtx.state === 'suspended') audioCtx.resume();
-    const osc = audioCtx.createOscillator(); const gain = audioCtx.createGain();
+    const osc = audioCtx.createOscillator(); 
+    const gain = audioCtx.createGain();
     osc.connect(gain); gain.connect(audioCtx.destination);
-    if (type === 'success') { osc.type = 'sine'; osc.frequency.setValueAtTime(800, audioCtx.currentTime); gain.gain.setValueAtTime(1, audioCtx.currentTime); gain.gain.exponentialRampToValueAtTime(0.001, audioCtx.currentTime + 0.2); osc.start(); osc.stop(audioCtx.currentTime + 0.2); } 
-    else if (type === 'warning') { osc.type = 'square'; osc.frequency.setValueAtTime(400, audioCtx.currentTime); gain.gain.setValueAtTime(0.3, audioCtx.currentTime); gain.gain.exponentialRampToValueAtTime(0.001, audioCtx.currentTime + 0.4); osc.start(); osc.stop(audioCtx.currentTime + 0.4); } 
-    else { osc.type = 'sawtooth'; osc.frequency.setValueAtTime(150, audioCtx.currentTime); gain.gain.setValueAtTime(1, audioCtx.currentTime); gain.gain.exponentialRampToValueAtTime(0.001, audioCtx.currentTime + 0.6); osc.start(); osc.stop(audioCtx.currentTime + 0.6); }
+
+    if (type === 'success') { 
+        // HADIR: Nada tinggi dan ceria (Sine Wave naik)
+        osc.type = 'sine'; 
+        osc.frequency.setValueAtTime(600, audioCtx.currentTime); 
+        osc.frequency.exponentialRampToValueAtTime(1000, audioCtx.currentTime + 0.1);
+        gain.gain.setValueAtTime(1, audioCtx.currentTime); 
+        gain.gain.exponentialRampToValueAtTime(0.001, audioCtx.currentTime + 0.3); 
+        osc.start(); osc.stop(audioCtx.currentTime + 0.3); 
+
+    } else if (type === 'late') {
+        // TERLAMBAT: Nada datar dan mengalun (Triangle Wave turun pelan)
+        osc.type = 'triangle'; 
+        osc.frequency.setValueAtTime(450, audioCtx.currentTime); 
+        osc.frequency.linearRampToValueAtTime(350, audioCtx.currentTime + 0.3);
+        gain.gain.setValueAtTime(0.8, audioCtx.currentTime); 
+        gain.gain.exponentialRampToValueAtTime(0.001, audioCtx.currentTime + 0.4); 
+        osc.start(); osc.stop(audioCtx.currentTime + 0.4);
+
+    } else if (type === 'warning') { 
+        // SUDAH ABSEN: Bip cepat (Square Wave pendek)
+        osc.type = 'square'; 
+        osc.frequency.setValueAtTime(500, audioCtx.currentTime); 
+        gain.gain.setValueAtTime(0.2, audioCtx.currentTime); 
+        gain.gain.exponentialRampToValueAtTime(0.001, audioCtx.currentTime + 0.15); 
+        osc.start(); osc.stop(audioCtx.currentTime + 0.15); 
+        
+        // Bip kedua
+        setTimeout(() => {
+            const osc2 = audioCtx.createOscillator(); const gain2 = audioCtx.createGain();
+            osc2.connect(gain2); gain2.connect(audioCtx.destination);
+            osc2.type = 'square'; osc2.frequency.setValueAtTime(500, audioCtx.currentTime);
+            gain2.gain.setValueAtTime(0.2, audioCtx.currentTime);
+            gain2.gain.exponentialRampToValueAtTime(0.001, audioCtx.currentTime + 0.15);
+            osc2.start(); osc2.stop(audioCtx.currentTime + 0.15);
+        }, 180);
+
+    } else { 
+        // ERROR: Suara kasar dan rendah (Sawtooth Wave)
+        osc.type = 'sawtooth'; 
+        osc.frequency.setValueAtTime(150, audioCtx.currentTime); 
+        gain.gain.setValueAtTime(0.5, audioCtx.currentTime); 
+        gain.gain.exponentialRampToValueAtTime(0.001, audioCtx.currentTime + 0.5); 
+        osc.start(); osc.stop(audioCtx.currentTime + 0.5); 
+    }
 }
 
 // --- KONTROL KAMERA ---
@@ -228,10 +271,15 @@ async function performAbsensi(nim) {
     isProcessing = true;
     const resContainer = document.getElementById('result-container');
     resContainer.style.display = "block";
+    
+    // Hapus kelas animasi lama agar bisa di-trigger ulang
+    resContainer.style.animation = 'none';
+    resContainer.offsetHeight; // Trigger reflow
+    resContainer.style.animation = null;
 
     if (scannedNIMs.has(nim)) {
         playSound('warning');
-        showResult("warning", "PERINGATAN!", "NIM: " + nim, "-", "SUDAH ABSEN DI SESI INI.");
+        showResult("warning", "PERINGATAN GANDA", "NIM: " + nim, "-", "SUDAH TERCATAT DI SESI INI");
         resetScanner(); return;
     }
 
@@ -241,7 +289,6 @@ async function performAbsensi(nim) {
         scannedNIMs.add(String(nim));
         document.getElementById('session-info').innerText = `Memori Sesi: ${scannedNIMs.size} Hadir`;
         failedAttempts = 0; 
-        playSound('success'); 
         
         const imgFoto = document.getElementById('res-foto');
         if (anggota.foto_url) { imgFoto.src = anggota.foto_url; imgFoto.style.display = "inline-block"; } 
@@ -250,29 +297,31 @@ async function performAbsensi(nim) {
         // --- KALKULASI KETERLAMBATAN OTOMATIS ---
         const kegiatanTerpilih = dataKegiatan.find(k => k.id === sesiKegiatan);
         let statusKehadiran = "HADIR";
+        let warnaKelas = "success";
         
         if (kegiatanTerpilih && kegiatanTerpilih.waktu_mulai) {
             const waktuMulai = new Date(kegiatanTerpilih.waktu_mulai);
-            const batasToleransi = kegiatanTerpilih.batas_toleransi || 0; // dalam menit
+            const batasToleransi = kegiatanTerpilih.batas_toleransi || 0; 
             const waktuSekarang = new Date();
             
-            // Hitung selisih dalam menit
             const selisihMenit = (waktuSekarang - waktuMulai) / (1000 * 60);
             
             if (selisihMenit > batasToleransi) {
                 statusKehadiran = "TERLAMBAT";
+                warnaKelas = "late"; // Memicu warna Oranye
             }
         }
 
-        showResult("success", anggota.nama, "NIM: " + anggota.nim, "Divisi: " + anggota.divisi, statusKehadiran);
+        // Panggil suara dan visual sesuai kalkulasi
+        playSound(warnaKelas === "late" ? "late" : "success");
+        showResult(warnaKelas, anggota.nama, "NIM: " + anggota.nim, "Divisi: " + anggota.divisi, `STATUS: ${statusKehadiran}`);
         
-        // Kirim status yang sudah dikalkulasi ke database
         kirimKeDatabase(anggota, statusKehadiran);
     } else {
         failedAttempts++;
         playSound('error'); 
         document.getElementById('res-foto').style.display = "none"; 
-        showResult("error", "TIDAK TERDAFTAR", "NIM: " + nim, "-", "Cek master data DPO.");
+        showResult("error", "TIDAK TERDAFTAR", "NIM: " + nim, "-", "DATA TIDAK DITEMUKAN");
         if (failedAttempts >= 3) document.getElementById('manual-container').style.display = 'block';
     }
     resetScanner();

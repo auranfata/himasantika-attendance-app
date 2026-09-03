@@ -118,14 +118,46 @@ h2, h3 { color: var(--primary-blue); margin: 0 0 8px 0; }
 .flex-input input { flex-grow: 1; }
 
 /* Result Popup */
-#result-container { position: fixed; top: 20px; left: 50%; transform: translateX(-50%); width: 90%; max-width: 400px; padding: 20px; border-radius: 12px; text-align: center; box-shadow: 0 15px 35px rgba(0,0,0,0.2); z-index: 1000; color: white; }
-#result-container.success { background: var(--success); }
-#result-container.warning { background: var(--warning); }
-#result-container.error { background: var(--danger); }
-#res-foto { width: 100px; height: 100px; border-radius: 50%; object-fit: cover; margin-bottom: 10px; border: 3px solid rgba(255,255,255,0.5); display: none; }
-#res-nama { margin: 0 0 5px 0; font-size: 1.3rem; }
-.bold-text { font-weight: bold; margin: 5px 0; }
-.italic-text { font-style: italic; margin-top: 10px; font-size: 0.9rem; }
+/* --- ARSITEKTUR POP-UP SCANNER --- */
+#result-container {
+    position: fixed;
+    top: 20px;
+    left: 50%;
+    transform: translateX(-50%);
+    width: 90%;
+    max-width: 400px;
+    padding: 20px;
+    border-radius: 12px;
+    text-align: center;
+    box-shadow: 0 10px 25px rgba(0,0,0,0.25);
+    z-index: 9999;
+    color: white;
+    /* Animasi meluncur dari atas */
+    animation: slideDown 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275) forwards;
+}
+
+@keyframes slideDown {
+    0% { top: -100px; opacity: 0; }
+    100% { top: 20px; opacity: 1; }
+}
+
+/* 4 Kelas Warna Kondisional */
+#result-container.success { background: linear-gradient(135deg, #2ecc71, #27ae60); }
+#result-container.late { background: linear-gradient(135deg, #e67e22, #d35400); }
+#result-container.warning { background: linear-gradient(135deg, #f1c40f, #f39c12); color: #333; }
+#result-container.error { background: linear-gradient(135deg, #e74c3c, #c0392b); }
+
+/* Tipografi Internal Pop-up */
+#res-foto {
+    width: 80px; height: 80px; border-radius: 50%; object-fit: cover;
+    border: 3px solid rgba(255,255,255,0.6); margin-bottom: 10px;
+}
+#res-nama { margin: 0 0 5px 0; font-size: 1.2rem; }
+#res-nim, #res-divisi { margin: 0; font-size: 0.9rem; opacity: 0.9; }
+#res-msg {
+    margin-top: 15px; font-weight: bold; font-size: 1.1rem; text-transform: uppercase;
+    padding: 8px; background: rgba(255,255,255,0.25); border-radius: 6px; letter-spacing: 1px;
+}
 
 /* 1. Tambahkan atribut transition ke .app-container lama Anda (di bagian atas/tengah style.css) */
 .app-container {
